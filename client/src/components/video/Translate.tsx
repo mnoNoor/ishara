@@ -1,0 +1,136 @@
+import { useRef, useState } from "react";
+import Video, { type VideoHandle } from "./Video";
+
+const DIALECTS = ["سعودي", "مصري", "لبناني", "عراقي", "خليجي"] as const;
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
+const CAPTURE_DURATION_MS = 3000;
+
+interface TranslationResult {
+  word: string;
+  arabicText: string;
+  confidence: number;
+}
+
+export default function Translate() {
+  const videoRef = useRef<VideoHandle>(null);
+  const [dialect, setDialect] = useState<(typeof DIALECTS)[number]>("سعودي");
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [result, setResult] = useState<TranslationResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCapture = () => {
+    setError(null);
+    setResult(null);
+    videoRef.current?.startRecording();
+    setIsCapturing(true);
+
+    setTimeout(() => {
+      videoRef.current?.stopRecording();
+      setIsCapturing(false);
+
+      const frames = videoRef.current?.getRecordedFrames();
+      if (!frames || frames.length === 0) {
+        setError("لم يتم رصد أي حركة يد. حاول مرة أخرى بالقرب من الكاميرا.");
+        return;
+      }
+
+      sendForTranslation(frames.map((f) => f.landmarks));
+    }, CAPTURE_DURATION_MS);
+  };
+
+  const sendForTranslation = async (
+    landmarksJson: ReturnType<
+      VideoHandle["getRecordedFrames"]
+    >[number]["landmarks"][],
+  ) => {
+    setIsTranslating(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/translate/sign-to-text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dialect, landmarksJson }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "فشل في الترجمة");
+      }
+
+      setResult(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "حدث خطأ أثناء الترجمة");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
+      {error && (
+        <div className="p-3 rounded-lg text-center text-sm font-medium bg-red-50 text-red-700 border border-red-200">
+          {error}
+        </div>
+      )}
+
+      <div className="relative rounded-xl overflow-hidden">
+        <Video ref={videoRef} mode="translate" isActive={isCapturing} />
+        {isCapturing && (
+          <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+            <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+            جاري رصد الإشارة...
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          اللهجة
+        </label>
+        <select
+          value={dialect}
+          onChange={(e) => setDialect(e.target.value as typeof dialect)}
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
+          disabled={isCapturing || isTranslating}
+        >
+          {DIALECTS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          onClick={handleCapture}
+          disabled={isCapturing || isTranslating}
+          className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium transition shadow-sm"
+        >
+          {isCapturing
+            ? "جاري الرصد..."
+            : isTranslating
+              ? "جاري الترجمة..."
+              : "ابدأ ترجمة الإشارة"}
+        </button>
+      </div>
+
+      {result && (
+        <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+          <p className="text-sm text-emerald-700">النص المُترجم</p>
+          <p className="text-2xl font-bold text-emerald-800" dir="rtl">
+            {result.arabicText}
+          </p>
+          <p className="text-sm text-gray-500">({result.word})</p>
+          <p className="text-xs text-emerald-600">
+            نسبة الثقة: {result.confidence}%
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@layer components {
+  .nav-link {
+    @apply px-4 py-2.5 rounded-md text-xl font-medium transition-colors duration-200 text-gray-700 hover:bg-gray-100 hover:text-blue-600;
+  }
+  .nav-link.active {
+    @apply bg-blue-100 text-blue-700;
+  }
+}
+
+body {
+  font-family: "Cairo", system-ui, sans-serif;
+  direction: rtl;
+}
+
+video,
+canvas {
+  border-radius: 0.5rem;
+}
