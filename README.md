@@ -103,27 +103,6 @@ npm start
 
 In production the Express server serves the built frontend directly, so only one process and port are needed.
 
-## API Reference
-
-**`POST /api/admin/signs/record`** — save a new reference sign
-
-```json
-{ "word": "marhaba", "arabicText": "مرحباً", "dialect": "سعودي", "landmarksJson": [...] }
-```
-
-⚠️ No authentication yet — don't expose publicly as-is.
-
-**`POST /api/translate/sign-to-text`** — translate a captured gesture
-
-```json
-{ "dialect": "سعودي", "landmarksJson": [...] }
-```
-
-→ `{ "word": "marhaba", "arabicText": "مرحباً", "confidence": 87 }`
-
-**`POST /api/translate/clear-cache`** — clear cached reference vectors (useful after bulk inserts)
-**`GET /api/health`** — health check
-
 ## Known Limitations
 
 - No authentication on admin routes

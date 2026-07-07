@@ -9,5 +9,17 @@
     "dev:web": "npm run dev --prefix web",
     "dev:server": "npm run dev --prefix server"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mnoNoor/ishara.git"
+  },
+  "keywords": [],
+  "author": "mnoNoor",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/mnoNoor/ishara/issues"
+  },
+  "homepage": "https://github.com/mnoNoor/ishara#readme"
 }
